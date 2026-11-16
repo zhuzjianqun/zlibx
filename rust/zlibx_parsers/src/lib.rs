@@ -8,6 +8,7 @@
 pub mod models;
 pub mod fulltext;
 pub mod article;
+pub mod book_detail;
 
 use flutter_rust_bridge::frb;
 
@@ -81,6 +82,15 @@ pub fn parse_article_search_page(
 #[frb]
 pub fn extract_article_search_query(html: String) -> Option<String> {
     article::extract_article_search_query(&html)
+}
+
+/// Phase 3: parse a book detail page's metadata rows.
+///
+/// Mirrors `parseBookDetailProperties` in `book_detail_html.dart`.
+/// Missing rows parse to None; never throws.
+#[frb]
+pub fn parse_book_detail_properties(html: String) -> models::BookDetailMetadata {
+    book_detail::parse_book_detail_properties(&html)
 }
 
 // FRB-generated bindings (produced by `tool/frb_codegen.sh`; gitignored).

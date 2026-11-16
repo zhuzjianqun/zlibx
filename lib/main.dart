@@ -21,6 +21,7 @@ import 'services/instance_manager.dart';
 import 'services/mirror_trust.dart';
 import 'services/storage_service.dart';
 import 'core/rust_article.dart';
+import 'core/rust_book_detail.dart';
 import 'core/rust_fulltext.dart';
 import 'services/webview_challenge_solver.dart';
 import 'theme/app_theme.dart';
@@ -68,6 +69,8 @@ void main() async {
   injectRustFulltextParser();
   // Phase 3: same for the article search page parse (文章 tab).
   injectRustArticleParser();
+  // Phase 3: same for the book detail metadata rows.
+  injectRustBookDetailParser();
   // O1: register the background-download foreground-service bridge and
   // request the notification permission (Android 13+) up front.
   DownloadForegroundService.register();

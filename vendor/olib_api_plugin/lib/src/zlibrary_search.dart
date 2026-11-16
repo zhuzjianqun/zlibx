@@ -130,11 +130,12 @@ mixin ZLibrarySearch on ZLibraryApiBase {
         statusCode: status,
       );
     }
-    return ApiResponse.ok(
-      BookDetailExtras(
-        metadata: parseBookDetailProperties(html),
-      ),
-    );
+    // Phase 3: the host-injected Rust hook parses when present; the
+    // Dart implementation stays as the fallback.
+    final metadata = bookDetailParseOverride != null
+        ? await bookDetailParseOverride!(html)
+        : parseBookDetailProperties(html);
+    return ApiResponse.ok(BookDetailExtras(metadata: metadata));
   }
 
   /// Resolve the real eapi hash for a book whose stored hash is a

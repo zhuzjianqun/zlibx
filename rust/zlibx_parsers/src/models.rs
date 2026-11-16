@@ -103,3 +103,17 @@ pub struct ArticleSearchPage {
     pub total: i64,
     pub total_pages: i64,
 }
+
+/// Metadata parsed from a book detail page's HTML. Mirrors
+/// `BookDetailMetadata` in `book_detail_html.dart` (all fields
+/// `Option<String>`; missing rows parse to None).
+#[derive(Debug, Clone)]
+pub struct BookDetailMetadata {
+    pub volume: Option<String>,
+    pub isbn10: Option<String>,
+    pub isbn13: Option<String>,
+    pub ipfs_cid: Option<String>,
+    pub ipfs_cid_blake2b: Option<String>,
+    pub rating_interest: Option<String>,
+    pub rating_quality: Option<String>,
+}
