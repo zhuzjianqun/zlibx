@@ -65,6 +65,14 @@ The HTML parsing layer lives in `rust/zlibx_parsers/` (Rust) and is bridged to D
 - Widgets that show ONE download should watch `downloadTaskProvider(id)`, not the whole `downloadProvider` list.
 - Anna's Archive fast download needs the user's own donation key, entered by the user in Settings (never ask the user to send it to you).
 
+## Release signing
+
+The release APK is signed with `android/app/olib-release-key.jks` (alias `olib-release`, PKCS12). The keystore and `android/key.properties` are **gitignored — never commit them**; losing the key means the app can never be updated for existing installs.
+
+- **Local builds**: copy `android/key.properties.example` to `android/key.properties` and point `storeFile` at the keystore (missing file/keystore makes release builds fail loudly instead of silently signing with the debug key).
+- **CI**: the release job restores the keystore from four repo Secrets — `KEYSTORE_BASE64` (base64 of the .jks), `KEYSTORE_PASSWORD`, `KEY_PASSWORD`, `KEY_ALIAS` — then writes `android/key.properties` itself. Update them with `gh secret set NAME --repo zhuzjianqun/zlibx`.
+- Generate a replacement: `keytool -genkeypair -keystore olib-release-key.jks -alias olib-release -keyalg RSA -keysize 4096 -validity 10950` (10 950 days ≈ Google Play's minimum horizon).
+
 ## Repo Notes
 
 - Android build uses `android/build.gradle.kts`. China-based Maven mirrors (Aliyun) are added only when the `useCnMirror` Gradle property is set; CI does not use them.
