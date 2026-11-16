@@ -12,6 +12,7 @@ pub mod book_detail;
 pub mod booklist;
 pub mod category;
 pub mod download_stats;
+pub mod annas_archive;
 
 use flutter_rust_bridge::frb;
 
@@ -149,6 +150,124 @@ pub fn parse_category_books_page(
 #[frb]
 pub fn parse_download_stats_page(html: String) -> Vec<models::Book> {
     download_stats::parse_download_stats_page(&html)
+}
+
+// ──────────────────────────────────────────────────────────────────
+// Phase 4: Anna's Archive (external source)
+// ──────────────────────────────────────────────────────────────────
+
+/// Phase 4: parse an Anna's Archive search results page.
+/// Mirrors `ArchiveParsing.parseSearchResults`.
+#[frb]
+pub fn parse_annas_search_results(
+    html: String,
+    base_url: String,
+    file_type: String,
+) -> Vec<models::ArchiveBook> {
+    annas_archive::parse_search_results(&html, &base_url, &file_type)
+}
+
+/// Phase 4: parse one Anna's Archive `/md5/` detail page.
+/// Mirrors `ArchiveParsing.parseBookDetails`.
+#[frb]
+pub fn parse_annas_book_details(
+    html: String,
+    url: String,
+    base_url: String,
+) -> Option<models::ArchiveBookDetails> {
+    annas_archive::parse_book_details(&html, &url, &base_url)
+}
+
+/// Phase 4: extract the direct download link from a slow_download page.
+/// Mirrors `ArchiveParsing.extractSlowDownloadLink`.
+#[frb]
+pub fn extract_annas_slow_download_link(
+    html: String,
+    page_url: String,
+) -> Option<String> {
+    annas_archive::extract_slow_download_link(&html, &page_url)
+}
+
+/// Phase 4: bot-protection interstitial detection.
+/// Mirrors `ArchiveParsing.isChallengeResponse`.
+#[frb]
+pub fn annas_is_challenge_response(
+    status_code: i64,
+    body: String,
+    cf_mitigated: Option<String>,
+) -> bool {
+    annas_archive::is_challenge_response(status_code, &body, cf_mitigated.as_deref())
+}
+
+/// Phase 4: is this HTML an Anna's Archive page? Mirrors `isArchivePage`.
+#[frb]
+pub fn annas_is_archive_page(html: String) -> bool {
+    annas_archive::is_archive_page(&html)
+}
+
+/// Phase 4: emoji/whitespace cleaner. Mirrors `cleanText`.
+#[frb]
+pub fn annas_clean_text(text: String) -> String {
+    annas_archive::clean_text(&text)
+}
+
+/// Phase 4: format detection from an info line. Mirrors `formatFromInfo`.
+#[frb]
+pub fn annas_format_from_info(info: Option<String>) -> String {
+    annas_archive::format_from_info(info.as_deref())
+}
+
+/// Phase 4: md5 segment from a path or URL. Mirrors `md5FromLink`.
+#[frb]
+pub fn annas_md5_from_link(url_or_path: String) -> String {
+    annas_archive::md5_from_link(&url_or_path)
+}
+
+/// Phase 4: RFC-3986 URL resolution against a base. Mirrors `resolveUrl`.
+#[frb]
+pub fn annas_resolve_url(base_url: String, href: String) -> String {
+    annas_archive::resolve_url(&base_url, &href)
+}
+
+/// Phase 4: RFC-3986 URL resolution against a full page URL.
+/// Mirrors `resolveRelative`.
+#[frb]
+pub fn annas_resolve_relative(href: String, page_url: String) -> String {
+    annas_archive::resolve_relative(&href, &page_url)
+}
+
+/// Phase 4: build a /search URL. Mirrors `buildSearchUrl`.
+#[frb]
+pub fn annas_build_search_url(
+    base_url: String,
+    query: String,
+    content: String,
+    sort: String,
+    file_type: String,
+    language: String,
+    year: String,
+    year_from: Option<String>,
+    year_to: Option<String>,
+    author: String,
+    publisher: String,
+    enable_filters: Option<bool>,
+    page: i64,
+) -> String {
+    annas_archive::build_search_url(
+        &base_url,
+        &query,
+        &content,
+        &sort,
+        &file_type,
+        &language,
+        &year,
+        year_from.as_deref(),
+        year_to.as_deref(),
+        &author,
+        &publisher,
+        enable_filters,
+        page,
+    )
 }
 
 // FRB-generated bindings (produced by `tool/frb_codegen.sh`; gitignored).

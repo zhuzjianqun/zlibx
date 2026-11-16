@@ -20,6 +20,7 @@ import 'services/hive_service.dart';
 import 'services/instance_manager.dart';
 import 'services/mirror_trust.dart';
 import 'services/storage_service.dart';
+import 'core/rust_annas.dart';
 import 'core/rust_article.dart';
 import 'core/rust_book_detail.dart';
 import 'core/rust_booklists.dart';
@@ -74,6 +75,8 @@ void main() async {
   injectRustBookDetailParser();
   // Phase 3: same for booklists / category / download history.
   injectRustBooklistParsers();
+  // Phase 4: Anna's Archive heavy parsers (search + md5 detail).
+  injectRustAnnasParsers();
   // O1: register the background-download foreground-service bridge and
   // request the notification permission (Android 13+) up front.
   DownloadForegroundService.register();

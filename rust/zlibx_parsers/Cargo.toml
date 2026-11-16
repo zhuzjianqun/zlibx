@@ -20,6 +20,7 @@ scraper = "0.20"
 # Direct dep only for the NodeRef type in booklist's ancestor-link walk
 # (must match scraper's own ego-tree version — 0.6 for scraper 0.20).
 ego-tree = "0.6"
+url = "2"
 regex = "1"
 
 [profile.release]

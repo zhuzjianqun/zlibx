@@ -166,3 +166,31 @@ pub struct CategoryPage {
     pub total_pages: Option<i64>,
     pub search_slug: Option<String>,
 }
+
+/// One search result or detail record from Anna's Archive.
+/// Mirrors `ArchiveBook`.
+#[derive(Debug, Clone)]
+pub struct ArchiveBook {
+    pub title: String,
+    pub author: Option<String>,
+    pub thumbnail: Option<String>,
+    pub link: String,
+    pub md5: String,
+    pub publisher: Option<String>,
+    pub info: Option<String>,
+}
+
+/// A parsed `/md5/<md5>` detail page. Mirrors `ArchiveBookDetails`
+/// (fields flattened — no inheritance in the Rust model).
+#[derive(Debug, Clone)]
+pub struct ArchiveBookDetails {
+    pub title: String,
+    pub author: Option<String>,
+    pub thumbnail: Option<String>,
+    pub link: String,
+    pub md5: String,
+    pub publisher: Option<String>,
+    pub info: Option<String>,
+    pub description: Option<String>,
+    pub slow_download_url: Option<String>,
+}
