@@ -3,7 +3,9 @@ import java.io.FileInputStream
 
 plugins {
     id("com.android.application")
-    // Built-in Kotlin: no longer explicitly apply kotlin-android.
+    // Kotlin plugin: needed for the `kotlin { compilerOptions { } }` DSL block
+    // below. (Plugin modules get this via settings.gradle.kts `beforeProject`.)
+    id("org.jetbrains.kotlin.android")
     // The Flutter Gradle Plugin must be applied after the Android Gradle plugin.
     id("dev.flutter.flutter-gradle-plugin")
 }
@@ -96,3 +98,79 @@ kotlin {
         jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
     }
 }
+
+// ============================================================================
+// Rust / flutter_rust_bridge integration (phase 1 scaffold)
+// ============================================================================
+// Builds the zlibx_parsers Rust crate for Android arm64-v8a and packages the
+// resulting libzlibx_parsers.so into the APK's jniLibs. The .so is built once
+// per Gradle build and copied into src/main/jniLibs/arm64-v8a/ before the
+// native-lib merge step.
+
+val rustCrateDir = rootProject.file("../rust/zlibx_parsers")
+val jniLibsDir = file("src/main/jniLibs/arm64-v8a")
+
+// Path to the Rust crate's .so after a release build for aarch64-linux-android.
+val rustSoFile = rustCrateDir.resolve(
+    "target/aarch64-linux-android/release/libzlibx_parsers.so"
+)
+
+tasks.register<Exec>("cargoBuildRust") {
+    group = "rust"
+    description = "Build zlibx_parsers Rust crate for Android arm64-v8a"
+
+    // --- Toolchain paths (overridable via env vars) ---
+    val cargoHome = System.getenv("CARGO_HOME")
+        ?: "${System.getProperty("user.home")}/.cargo"
+    val mingwBin = System.getenv("MINGW_BIN") ?: "D:/mingw64/mingw64/bin"
+    val androidHome = System.getenv("ANDROID_HOME") ?: "D:/Android/Sdk"
+    val ndkHome = System.getenv("ANDROID_NDK_HOME")
+        ?: "$androidHome/ndk/28.2.13676358"
+    val ndkBin = "$ndkHome/toolchains/llvm/prebuilt/windows-x86_64/bin"
+
+    // --- Environment for cargo + cc-rs ---
+    environment("PATH", "$mingwBin;$cargoHome/bin;${System.getenv("PATH")}")
+    environment("ANDROID_HOME", androidHome)
+    environment("ANDROID_NDK_HOME", ndkHome)
+    // cc-rs needs explicit compiler overrides for the Android target.
+    environment("CC_aarch64_linux_android", "$ndkBin/aarch64-linux-android29-clang.cmd")
+    environment("AR_aarch64_linux_android", "$ndkBin/llvm-ar.exe")
+    environment("RANLIB_aarch64_linux_android", "$ndkBin/llvm-ranlib.exe")
+
+    val cargoBin = file("$cargoHome/bin/cargo.exe")
+    commandLine(
+        if (cargoBin.exists()) cargoBin else "cargo",
+        "build", "--release",
+        "--target", "aarch64-linux-android",
+    ).workingDir(rustCrateDir)
+
+    // Re-run whenever the Rust sources change.
+    inputs.dir(rustCrateDir.resolve("src"))
+    inputs.file(rustCrateDir.resolve("Cargo.toml"))
+    outputs.file(rustSoFile)
+}
+
+tasks.register<Copy>("copyRustSo") {
+    group = "rust"
+    description = "Copy libzlibx_parsers.so into jniLibs for packaging"
+
+    dependsOn("cargoBuildRust")
+
+    from(rustSoFile)
+    into(jniLibsDir)
+    rename { "libzlibx_parsers.so" }
+
+    // Re-run copy only when the .so is newer.
+    inputs.file(rustSoFile)
+    outputs.dir(jniLibsDir)
+}
+
+// Hook into the native-lib packaging: ensure the .so is built and in place
+// before the APK's jniLibs are merged.
+tasks.matching { it.name.contains("MergeNativeLibs", ignoreCase = true) }
+    .configureEach { dependsOn("copyRustSo") }
+// Also cover the Flutter-native-assets / packaging path for debug/profile.
+tasks.matching {
+    it.name.startsWith("merge") && it.name.contains("JniLib", ignoreCase = true)
+}.configureEach { dependsOn("copyRustSo") }
+

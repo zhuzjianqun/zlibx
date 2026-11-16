@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Build zlibx_parsers Rust crate for Android arm64-v8a.
+#
+# Sets up the required environment (MinGW host toolchain, NDK clang for the
+# Android target) and runs `cargo build --release --target aarch64-linux-android`.
+# Called by the Gradle `cargoBuildRust` task in android/app/build.gradle.kts.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+CRATE_DIR="$ROOT/rust/zlibx_parsers"
+
+# --- Resolve toolchain paths ---
+# MinGW (host C toolchain for build scripts like dart-sys)
+MINGW_BIN="${MINGW_BIN:-D:/mingw64/mingw64/bin}"
+# Cargo / rustup
+CARGO_HOME="${CARGO_HOME:-$HOME/.cargo}"
+# NDK (Android target linker + ar)
+NDK_HOME="${ANDROID_NDK_HOME:-${ANDROID_HOME:-D:/Android/Sdk}/ndk/28.2.13676358}"
+NDK_BIN="$NDK_HOME/toolchains/llvm/prebuilt/windows-x86_64/bin"
+
+# --- Environment ---
+export PATH="$MINGW_BIN:$CARGO_HOME/bin:$PATH"
+export ANDROID_HOME="${ANDROID_HOME:-D:/Android/Sdk}"
+export ANDROID_NDK_HOME="$NDK_HOME"
+
+# cc-rs needs explicit compiler overrides for the Android target.
+export CC_aarch64_linux_android="$NDK_BIN/aarch64-linux-android29-clang.cmd"
+export AR_aarch64_linux_android="$NDK_BIN/llvm-ar.exe"
+export RANLIB_aarch64_linux_android="$NDK_BIN/llvm-ranlib.exe"
+
+cd "$CRATE_DIR"
+cargo build --release --target aarch64-linux-android "$@"

@@ -75,6 +75,24 @@ lib/l10n/generated/
 *.dSYM.zip
 *.dSYM
 
+# ========================================
+# Rust / flutter_rust_bridge (phase 1 scaffold)
+# ========================================
+# Rust build artifacts — generated, never committed.
+/rust/**/target/
+# FRB codegen output is generated at build time, not committed.
+**/frb_generated.dart
+**/frb_generated.rs
+**/frb_generated.patch
+**/frb_generated.io.dart
+**/frb_generated.web.dart
+# FRB's top-level generated API/model files (tool/frb_codegen.sh regenerates
+# them; never hand-edit, and re-check these paths if FRB output changes).
+/lib/lib.dart
+/lib/models.dart
+# .so copied into jniLibs by the Gradle copyRustSo task each build.
+/android/app/src/main/jniLibs/arm64-v8a/libzlibx_parsers.so
+
 # Publish page
 api_dump/
 debug/

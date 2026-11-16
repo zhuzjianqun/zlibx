@@ -20,6 +20,7 @@ import 'services/hive_service.dart';
 import 'services/instance_manager.dart';
 import 'services/mirror_trust.dart';
 import 'services/storage_service.dart';
+import 'core/rust_fulltext.dart';
 import 'services/webview_challenge_solver.dart';
 import 'theme/app_theme.dart';
 import 'utils/diagnostics.dart';
@@ -59,6 +60,11 @@ void main() async {
   };
 
   await HiveService.init();
+  // Phase 2: route the fulltext page parse through the Rust bridge.
+  // Pure in-memory hook registration — the FRB engine initializes lazily
+  // on the first full-text search (see rust_fulltext.dart), so startup
+  // timing is unaffected and a missing .so falls back to Dart silently.
+  injectRustFulltextParser();
   // O1: register the background-download foreground-service bridge and
   // request the notification permission (Android 13+) up front.
   DownloadForegroundService.register();
@@ -73,8 +79,9 @@ void main() async {
   // 直接读 settingsBox：providers 还没建，且这个判定不参与任何 UI 订阅。
   final appLockEnabled = HiveService.settingsBox.get('appLockEnabled');
   final appLockTimeout = HiveService.settingsBox.get('appLockTimeoutSeconds');
-  final leftForegroundAt =
-      HiveService.settingsBox.get(appLockLeftForegroundKey);
+  final leftForegroundAt = HiveService.settingsBox.get(
+    appLockLeftForegroundKey,
+  );
   AppLockController.instance.restoreOnStartup(
     enabled: appLockEnabled is bool && appLockEnabled,
     timeoutSeconds: appLockTimeout is int ? appLockTimeout : 0,
@@ -109,17 +116,12 @@ void main() async {
     final context = rootNavigatorKey.currentContext;
     if (context == null) return null;
     final solved = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-          builder: (_) => ChallengeSolverScreen(url: url)),
+      MaterialPageRoute(builder: (_) => ChallengeSolverScreen(url: url)),
     );
     return solved == true ? ChallengeHtmlCache.get(url) : null;
   };
 
-  runApp(
-    const ProviderScope(
-      child: MyApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends ConsumerStatefulWidget {
@@ -129,9 +131,7 @@ class MyApp extends ConsumerStatefulWidget {
   ConsumerState<MyApp> createState() => _MyAppState();
 }
 
-
-class _MyAppState extends ConsumerState<MyApp>
-    with WidgetsBindingObserver {
+class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
@@ -150,8 +150,9 @@ class _MyAppState extends ConsumerState<MyApp>
     // Account-scoped pages (own lists, detail pages) are stored
     // under the current account's partition, matching the keys the
     // screens read; public pages keep the plain URL key.
-    ref.read(zlibraryApiProvider).onBooklistHtmlLoaded =
-        (url, html, fetchedAt) {
+    ref
+        .read(zlibraryApiProvider)
+        .onBooklistHtmlLoaded = (url, html, fetchedAt) {
       final accountId = BooklistHtmlCache.isPrivateUrl(url)
           ? (ref.read(authProvider).user?.id ?? 'signed-out')
           : null;

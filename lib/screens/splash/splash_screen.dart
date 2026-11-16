@@ -88,7 +88,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     // 关动画时（disableAnimations）不循环，停在中点静态呼吸态。
     // initState 里拿不到 MediaQuery，用 platformDispatcher 全局判定。
     final animationsEnabled = !WidgetsBinding
-        .instance.platformDispatcher.accessibilityFeatures.disableAnimations;
+        .instance
+        .platformDispatcher
+        .accessibilityFeatures
+        .disableAnimations;
     _pulseController = AnimationController(
       vsync: this,
       duration: AppMotion.pulse,
@@ -104,16 +107,24 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       duration: AppMotion.shimmer,
     );
     if (animationsEnabled) _ringController.repeat();
-    _ringRotation = Tween<double>(begin: 0.0, end: 2 * math.pi).animate(
-      CurvedAnimation(parent: _ringController, curve: Curves.linear),
-    );
+    _ringRotation = Tween<double>(
+      begin: 0.0,
+      end: 2 * math.pi,
+    ).animate(CurvedAnimation(parent: _ringController, curve: Curves.linear));
 
     // Start animation sequence
     _startAnimations();
 
     // Fire-and-forget: start background speed test for all domains
     Future.microtask(() => ref.read(speedTestProvider.notifier).runTest());
-    _initialize();
+    // Defer to after the first frame: _initialize's first statement reads
+    // AppLocalizations.of(context), and dependOnInheritedWidget is illegal
+    // until initState completes — the debug assert throws, killing the
+    // _initialize future before it can navigate (infinite spinner).
+    // Release builds strip the assert, which is why only debug builds hung.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _initialize();
+    });
   }
 
   void _startAnimations() async {
@@ -143,7 +154,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
     if (!mounted) return;
     if (!_networkOk) {
-      setState(() => _statusText = AppLocalizations.of(context)!.networkUnavailableRetrying);
+      setState(
+        () => _statusText = AppLocalizations.of(
+          context,
+        )!.networkUnavailableRetrying,
+      );
       await Future.delayed(const Duration(seconds: 2));
       _networkOk = await _checkNetwork();
     }
@@ -160,15 +175,15 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       final action = await _showLineUnavailableDialog();
       if (!mounted) return;
       if (action == _LineAction.proceed || action == _LineAction.skip) break;
-      setState(() => _statusText = AppLocalizations.of(context)!.checkingNetwork);
+      setState(
+        () => _statusText = AppLocalizations.of(context)!.checkingNetwork,
+      );
       _networkOk = await _checkNetwork();
     }
 
     // Step 2: Wait for auth state
     if (!mounted) return;
-    setState(
-      () => _statusText = AppLocalizations.of(context)!.loading,
-    );
+    setState(() => _statusText = AppLocalizations.of(context)!.loading);
     await _waitForAuth();
   }
 
@@ -179,9 +194,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         title: Text(AppLocalizations.of(context)!.lineUnavailable),
-        content: Text(
-          AppLocalizations.of(context)!.splashLineUnreachable,
-        ),
+        content: Text(AppLocalizations.of(context)!.splashLineUnreachable),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, _LineAction.skip),
@@ -219,16 +232,16 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       final domain = ref.read(domainProvider);
       // Use API endpoint for testing (same as domain selector)
       final uri = Uri.parse('https://$domain/eapi/info/languages');
-      
+
       final client = HttpClient();
       client.connectionTimeout = const Duration(seconds: 5);
-      
+
       try {
         final request = await client.getUrl(uri);
         final response = await request.close().timeout(
           const Duration(seconds: 8),
         );
-        
+
         // Headers are enough (same rule as the speed test): a healthy
         // mirror answers this endpoint 2xx. The body is never read, so a
         // hostile or broken mirror cannot make us buffer an unbounded
@@ -297,7 +310,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
             end: Alignment.bottomRight,
             colors: [
               Color.lerp(cs.primary, Colors.black, 0.35)!,
-              cs.primary,  // Core primary
+              cs.primary, // Core primary
               cs.primaryContainer,
             ],
             stops: [0.0, 0.5, 1.0],
@@ -317,7 +330,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
                   // ── Pulsing Glow + Animated Logo ──
                   AnimatedBuilder(
-                    animation: Listenable.merge([_logoController, _pulseController]),
+                    animation: Listenable.merge([
+                      _logoController,
+                      _pulseController,
+                    ]),
                     builder: (context, child) {
                       return Opacity(
                         opacity: _logoOpacity.value,
@@ -336,9 +352,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                                     shape: BoxShape.circle,
                                     gradient: RadialGradient(
                                       colors: [
-                                        Colors.white.withValues(alpha:0.12),
-                                        Colors.white.withValues(alpha:0.04),
-                                        Colors.white.withValues(alpha:0.0),
+                                        Colors.white.withValues(alpha: 0.12),
+                                        Colors.white.withValues(alpha: 0.04),
+                                        Colors.white.withValues(alpha: 0.0),
                                       ],
                                       stops: const [0.0, 0.6, 1.0],
                                     ),
@@ -351,9 +367,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                                 height: 100,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: Colors.white.withValues(alpha:0.15),
+                                  color: Colors.white.withValues(alpha: 0.15),
                                   border: Border.all(
-                                    color: Colors.white.withValues(alpha:0.25),
+                                    color: Colors.white.withValues(alpha: 0.25),
                                     width: 1.5,
                                   ),
                                 ),
@@ -384,9 +400,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                             children: [
                               Text(
                                 'zlibx',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .displayLarge
+                                style: Theme.of(context).textTheme.displayLarge
                                     ?.copyWith(
                                       color: Colors.white,
                                       fontWeight: FontWeight.w800,
@@ -395,10 +409,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                AppLocalizations.of(context)!
-                                    .yourOpenLibrary,
+                                AppLocalizations.of(context)!.yourOpenLibrary,
                                 style: TextStyle(
-                                  color: Colors.white.withValues(alpha:0.6),
+                                  color: Colors.white.withValues(alpha: 0.6),
                                   fontSize: 14,
                                   fontWeight: FontWeight.w400,
                                   letterSpacing: 1.5,
@@ -415,7 +428,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
                   // ── Custom spinning ring loader ──
                   AnimatedBuilder(
-                    animation: Listenable.merge([_contentController, _ringController]),
+                    animation: Listenable.merge([
+                      _contentController,
+                      _ringController,
+                    ]),
                     builder: (context, child) {
                       return Opacity(
                         opacity: _bottomOpacity.value,
@@ -471,13 +487,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                             decoration: BoxDecoration(
                               color: _networkOk
                                   ? AppColors.success
-                                  : Colors.white.withValues(alpha:0.5),
+                                  : Colors.white.withValues(alpha: 0.5),
                               shape: BoxShape.circle,
                               boxShadow: _networkOk
                                   ? [
                                       BoxShadow(
-                                        color: AppColors.success
-                                            .withValues(alpha:0.6),
+                                        color: AppColors.success.withValues(
+                                          alpha: 0.6,
+                                        ),
                                         blurRadius: 8,
                                         spreadRadius: 1,
                                       ),
@@ -489,7 +506,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                           Text(
                             _statusText,
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha:0.7),
+                              color: Colors.white.withValues(alpha: 0.7),
                               fontSize: 12,
                               fontWeight: FontWeight.w400,
                               letterSpacing: 0.3,
@@ -522,7 +539,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                           return Text(
                             'v$version',
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha:0.4),
+                              color: Colors.white.withValues(alpha: 0.4),
                               fontSize: 11,
                               letterSpacing: 0.5,
                             ),
@@ -558,7 +575,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   height: 200,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha:0.03),
+                    color: Colors.white.withValues(alpha: 0.03),
                   ),
                 ),
               ),
@@ -573,7 +590,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   height: 260,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha:0.025),
+                    color: Colors.white.withValues(alpha: 0.025),
                   ),
                 ),
               ),
@@ -588,7 +605,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   height: 80,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha:0.02),
+                    color: Colors.white.withValues(alpha: 0.02),
                   ),
                 ),
               ),
@@ -618,7 +635,7 @@ class _RingSpinnerPainter extends CustomPainter {
 
     // Background ring (very faint)
     final bgPaint = Paint()
-      ..color = color.withValues(alpha:0.15)
+      ..color = color.withValues(alpha: 0.15)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.5
       ..strokeCap = StrokeCap.round;
@@ -627,7 +644,7 @@ class _RingSpinnerPainter extends CustomPainter {
 
     // Spinning arc with gradient opacity
     final arcPaint = Paint()
-      ..color = color.withValues(alpha:0.9)
+      ..color = color.withValues(alpha: 0.9)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.5
       ..strokeCap = StrokeCap.round;
@@ -648,7 +665,7 @@ class _RingSpinnerPainter extends CustomPainter {
 
     // Secondary arc (shorter, opposite side, dimmer)
     final arcPaint2 = Paint()
-      ..color = color.withValues(alpha:0.4)
+      ..color = color.withValues(alpha: 0.4)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.5
       ..strokeCap = StrokeCap.round;
