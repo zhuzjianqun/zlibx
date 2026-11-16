@@ -117,3 +117,52 @@ pub struct BookDetailMetadata {
     pub rating_interest: Option<String>,
     pub rating_quality: Option<String>,
 }
+
+/// One Z-Library booklist. Mirrors `Booklist` in `booklist.dart`.
+/// NOTE: `id` is a String (numeric id attribute or the href's
+/// booklists/booklist segment) — not an int, matching Dart.
+#[derive(Debug, Clone)]
+pub struct Booklist {
+    pub id: String,
+    pub name: String,
+    pub description: String,
+    pub author: String,
+    pub author_profile: String,
+    pub author_avatar: String,
+    pub count: Option<i64>,
+    pub views: String,
+    pub comments: String,
+    pub color: Option<i64>,
+    pub is_private: bool,
+    pub is_favorite: bool,
+    pub cover_url: String,
+    pub url: String,
+    pub preview_books: Vec<Book>,
+}
+
+/// One page of booklist search results. Mirrors `BooklistsPage`
+/// (total_pages is 0 when the page carried no page count).
+#[derive(Debug, Clone)]
+pub struct BooklistsPage {
+    pub lists: Vec<Booklist>,
+    pub total_pages: i64,
+}
+
+/// One book on a category page. Mirrors `CategoryBook`.
+#[derive(Debug, Clone)]
+pub struct CategoryBook {
+    pub book: Book,
+    pub is_favorite: bool,
+    pub unavailable_reason: Option<String>,
+}
+
+/// One parsed category page. Mirrors `CategoryPage` — `total_pages`
+/// is None when the page carries no inline pagerOptions (never
+/// invent a total), unlike the fulltext/article parsers which
+/// default to 1.
+#[derive(Debug, Clone)]
+pub struct CategoryPage {
+    pub books: Vec<CategoryBook>,
+    pub total_pages: Option<i64>,
+    pub search_slug: Option<String>,
+}

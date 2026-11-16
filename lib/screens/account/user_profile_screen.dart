@@ -25,6 +25,7 @@ import 'widgets/profile_widgets.dart';
 
 import '../../utils/app_snack.dart';
 import '../../widgets/entrance.dart';
+
 /// Another user's profile page, reached by tapping an avatar in a
 /// comment row. Header (avatar + name from the tapped comment),
 /// then that user's booklists (from the profile document's
@@ -46,8 +47,7 @@ class UserProfileScreen extends ConsumerStatefulWidget {
   const UserProfileScreen({super.key, required this.args});
 
   @override
-  ConsumerState<UserProfileScreen> createState() =>
-      _UserProfileScreenState();
+  ConsumerState<UserProfileScreen> createState() => _UserProfileScreenState();
 }
 
 class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
@@ -96,8 +96,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
     }
     setState(() => _isLoading = true);
     final api = ref.read(zlibraryApiProvider);
-    final response =
-        await api.getUserComments(_args.userId.toString());
+    final response = await api.getUserComments(_args.userId.toString());
     if (!mounted) return;
     setState(() {
       _entries = response.success && response.data != null
@@ -107,9 +106,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
     });
     unawaited(
       _bookRefController.prefetch(
-        _entries
-            .map((e) => (bookId: e.bookId, title: e.bookTitle))
-            .toList(),
+        _entries.map((e) => (bookId: e.bookId, title: e.bookTitle)).toList(),
       ),
     );
   }
@@ -129,8 +126,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
         if (!mounted) return;
         AppRoutes.openBookDetailForBook(context, book);
       },
-      onFail: () =>
-          _showSnack(AppLocalizations.of(context)!.openBookFailed),
+      onFail: () => _showSnack(AppLocalizations.of(context)!.openBookFailed),
     );
   }
 
@@ -156,11 +152,15 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
     );
     final cachedHtml = BooklistHtmlCache.get(url);
     if (cachedHtml != null && !_isChallengeHtml(cachedHtml)) {
+      // Phase 3: parse through the Rust bridge when injected (await
+      // before setState — the parse is a Future under the hook).
+      final lists = await parseUserProfileBooklistsH(
+        cachedHtml,
+        baseUrl: Uri.parse(url).origin,
+      );
+      if (!mounted) return;
       setState(() {
-        _booklists = parseUserProfileBooklists(
-          cachedHtml,
-          baseUrl: Uri.parse(url).origin,
-        );
+        _booklists = lists;
         _booklistsLoading = false;
         _booklistsError = null;
       });
@@ -214,8 +214,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
       if (backgroundRefresh) return;
       setState(() {
         _booklistsLoading = false;
-        _booklistsError =
-            response.error ?? 'Failed to load booklists';
+        _booklistsError = response.error ?? 'Failed to load booklists';
       });
     } catch (e) {
       if (!mounted) return;
@@ -248,8 +247,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
     final fetchedAt = DateTime.now();
     final user = ref.read(authProvider).user;
     final userKey = user?.remixUserkey;
-    final hasSession =
-        user != null && userKey != null && userKey.isNotEmpty;
+    final hasSession = user != null && userKey != null && userKey.isNotEmpty;
     if (hasSession) {
       await _installSessionCookies(user.id, userKey, url);
     }
@@ -279,11 +277,13 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
       await bridgeWallCookies(api, url);
       if (!mounted) return;
       BooklistHtmlCache.store(url, pageHtml, fetchedAt: fetchedAt);
+      final lists = await parseUserProfileBooklistsH(
+        pageHtml,
+        baseUrl: Uri.parse(url).origin,
+      );
+      if (!mounted) return;
       setState(() {
-        _booklists = parseUserProfileBooklists(
-          pageHtml,
-          baseUrl: Uri.parse(url).origin,
-        );
+        _booklists = lists;
         _booklistsLoading = false;
         _booklistsError = null;
       });
@@ -351,41 +351,38 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
       // loading → 登录态 → 内容：统一淡入淡出（此前硬切）。
       body: StateTransitionSwitch(
         child: _isLoading
-          ? LoadingWidget(
-              key: const ValueKey('loading'),
-              message: l10n.loading,
-            )
-          : !_loggedIn
-              ? EmptyState(
-                  key: const ValueKey('login'),
-                  icon: Icons.login_rounded,
-                  title: l10n.loginToViewComments,
-                  action: FilledButton(
-                    onPressed: () => AppRoutes.openLogin(context),
-                    child: Text(l10n.login),
-                  ),
-                )
-              : RefreshIndicator(
-                  key: const ValueKey('content'),
-                  onRefresh: _refresh,
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(0, 8, 0, 24),
-                    children: [
-                      ProfileHeader(
-                        args: args,
-                        commentCount: _entries.length,
-                        booklistCount: _booklistCount,
-                      ),
-                      ..._booklistsSection(),
-                      _sectionHeader(
-                        l10n.comments,
-                        _entries.length,
-                      ),
-                      ..._commentCards(),
-                    ],
-                  ),
+            ? LoadingWidget(
+                key: const ValueKey('loading'),
+                message: l10n.loading,
+              )
+            : !_loggedIn
+            ? EmptyState(
+                key: const ValueKey('login'),
+                icon: Icons.login_rounded,
+                title: l10n.loginToViewComments,
+                action: FilledButton(
+                  onPressed: () => AppRoutes.openLogin(context),
+                  child: Text(l10n.login),
+                ),
+              )
+            : RefreshIndicator(
+                key: const ValueKey('content'),
+                onRefresh: _refresh,
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(0, 8, 0, 24),
+                  children: [
+                    ProfileHeader(
+                      args: args,
+                      commentCount: _entries.length,
+                      booklistCount: _booklistCount,
+                    ),
+                    ..._booklistsSection(),
+                    _sectionHeader(l10n.comments, _entries.length),
+                    ..._commentCards(),
+                  ],
                 ),
               ),
+      ),
     );
   }
 
@@ -422,9 +419,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
     final children = <Widget>[
       _sectionHeader(
         l10n.booklists,
-        _booklistsLoading || _booklistsError != null
-            ? null
-            : _booklists.length,
+        _booklistsLoading || _booklistsError != null ? null : _booklists.length,
       ),
     ];
     if (_booklistsLoading) {
@@ -492,10 +487,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          TextButton(
-            onPressed: _loadBooklists,
-            child: Text(l10n.retry),
-          ),
+          TextButton(onPressed: _loadBooklists, child: Text(l10n.retry)),
         ],
       ),
     );

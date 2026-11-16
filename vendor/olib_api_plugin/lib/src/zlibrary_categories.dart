@@ -178,7 +178,7 @@ mixin ZLibraryCategories on ZLibraryApiBase {
         statusCode: status,
       );
     }
-    final parsed = parseCategoryBooksPage(html, baseUrl: _base);
+    final parsed = await parseCategoryBooksPageH(html, baseUrl: _base);
     return ApiResponse.ok(parsed);
   }
 

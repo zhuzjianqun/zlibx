@@ -238,7 +238,7 @@ fn total_re() -> &'static regex::Regex {
     })
 }
 
-fn pages_re() -> &'static regex::Regex {
+pub(crate) fn pages_re() -> &'static regex::Regex {
     static RE: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
     RE.get_or_init(|| regex::Regex::new(r"pagesTotal\s*:\s*(\d+)").unwrap())
 }
@@ -251,7 +251,7 @@ fn token_re() -> &'static regex::Regex {
 /// Read an attribute, trim, return `None` when empty.
 ///
 /// Mirrors `_attr(dom.Element el, String name)`.
-fn attr(el: &ElementRef, name: &str) -> Option<String> {
+pub(crate) fn attr(el: &ElementRef, name: &str) -> Option<String> {
     el.attr(name)
         .map(|s| s.trim().to_string())
         .filter(|s| !s.is_empty())
@@ -260,9 +260,22 @@ fn attr(el: &ElementRef, name: &str) -> Option<String> {
 /// Book hash from a `/book/{hash}/{slug}.html` href, or `None` when the
 /// href does not have that shape. Mirrors `_hashFromHref` /
 /// `Book.hashFromBookHref`.
-fn hash_from_href(href: &str) -> Option<String> {
+pub(crate) fn hash_from_href(href: &str) -> Option<String> {
+    // Dart's Uri.pathSegments covers ONLY the path, so absolute URLs
+    // like `https://host/book/{hash}/…` work too: strip scheme://host
+    // for absolute URLs; relative hrefs pass through. (Differential-
+    // test-proven via the dstats absolute-link fixture.)
+    let after_scheme = match href.find("://") {
+        Some(i) => &href[i + 3..],
+        None => href,
+    };
+    // Keep from the first '/' onward (the path part).
+    let path = match after_scheme.find('/') {
+        Some(i) => &after_scheme[i..],
+        None => "",
+    };
     // Strip query string and fragment.
-    let path = href.split(['?', '#']).next().unwrap_or(href);
+    let path = path.split(['?', '#']).next().unwrap_or(path);
     let segments: Vec<&str> = path.split('/').filter(|s| !s.is_empty()).collect();
     if segments.len() >= 2 && segments[0] == "book" {
         let hash = segments[1];
@@ -277,7 +290,7 @@ fn hash_from_href(href: &str) -> Option<String> {
 ///
 /// Mirrors `_resolveCardUrl`: http/https passthrough, `//` → `https:…`,
 /// `/` → `$baseUrl$raw`, else passthrough.
-fn resolve_card_url(raw: &str, base_url: &str) -> String {
+pub(crate) fn resolve_card_url(raw: &str, base_url: &str) -> String {
     if raw.starts_with("http://") || raw.starts_with("https://") {
         raw.to_string()
     } else if raw.starts_with("//") {

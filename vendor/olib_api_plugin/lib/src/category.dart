@@ -199,3 +199,17 @@ int? _parseCategoryTotalPages(String html) {
   final pages = match == null ? null : int.tryParse(match.group(1) ?? '');
   return pages == null || pages < 1 ? null : pages;
 }
+
+/// Injectable Rust parse hook (phase 3). See booklist.dart's hooks
+/// for the contract; test/parsers/category_*.dart are the baselines.
+Future<CategoryPage> Function(String html, String? baseUrl)?
+    categoryPageParseOverride;
+
+/// Hook-aware entry. Mirrors parseBooklistsPageH.
+Future<CategoryPage> parseCategoryBooksPageH(
+  String html, {
+  String? baseUrl,
+}) async =>
+    categoryPageParseOverride != null
+        ? await categoryPageParseOverride!(html, baseUrl)
+        : parseCategoryBooksPage(html, baseUrl: baseUrl);

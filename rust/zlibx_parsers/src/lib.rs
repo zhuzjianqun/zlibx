@@ -9,6 +9,9 @@ pub mod models;
 pub mod fulltext;
 pub mod article;
 pub mod book_detail;
+pub mod booklist;
+pub mod category;
+pub mod download_stats;
 
 use flutter_rust_bridge::frb;
 
@@ -91,6 +94,61 @@ pub fn extract_article_search_query(html: String) -> Option<String> {
 #[frb]
 pub fn parse_book_detail_properties(html: String) -> models::BookDetailMetadata {
     book_detail::parse_book_detail_properties(&html)
+}
+
+/// Phase 3: parse a /booklists (or /booklists/my) list page.
+///
+/// Mirrors `parseBooklistsPage` (total_pages 0 when absent).
+#[frb]
+pub fn parse_booklists_page(
+    html: String,
+    base_url: String,
+) -> models::BooklistsPage {
+    booklist::parse_booklists_page(&html, &base_url)
+}
+
+/// Phase 3: booklists on one user's profile page.
+///
+/// Mirrors `parseUserProfileBooklists`.
+#[frb]
+pub fn parse_user_profile_booklists(
+    html: String,
+    base_url: String,
+) -> Vec<models::Booklist> {
+    booklist::parse_user_profile_booklists(&html, &base_url)
+}
+
+/// Phase 3: books on the first page of a booklist detail page.
+///
+/// Mirrors `parseBooklistDetailBooks`.
+#[frb]
+pub fn parse_booklist_detail_books(
+    html: String,
+    base_url: Option<String>,
+) -> Vec<models::Book> {
+    let base = base_url.as_deref().filter(|s| !s.is_empty());
+    booklist::parse_booklist_detail_books(&html, base)
+}
+
+/// Phase 3: parse a category page.
+///
+/// Mirrors `parseCategoryBooksPage` (total_pages None when absent,
+/// search slug percent-decoded).
+#[frb]
+pub fn parse_category_books_page(
+    html: String,
+    base_url: Option<String>,
+) -> models::CategoryPage {
+    let base = base_url.as_deref().filter(|s| !s.is_empty());
+    category::parse_category_books_page(&html, base)
+}
+
+/// Phase 3: parse the site's download history page.
+///
+/// Mirrors `parseDownloadStatsPage` (downloaded_at as ISO-8601 string).
+#[frb]
+pub fn parse_download_stats_page(html: String) -> Vec<models::Book> {
+    download_stats::parse_download_stats_page(&html)
 }
 
 // FRB-generated bindings (produced by `tool/frb_codegen.sh`; gitignored).
