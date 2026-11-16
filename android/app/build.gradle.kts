@@ -126,7 +126,16 @@ tasks.register<Exec>("cargoBuildRust") {
     val androidHome = System.getenv("ANDROID_HOME") ?: "D:/Android/Sdk"
     val ndkHome = System.getenv("ANDROID_NDK_HOME")
         ?: "$androidHome/ndk/28.2.13676358"
-    val ndkBin = "$ndkHome/toolchains/llvm/prebuilt/windows-x86_64/bin"
+    // NDK prebuilt dir name follows the BUILD host, not the target:
+    // windows-x86_64 / linux-x86_64 / darwin-x86_64. CI (ubuntu) needs
+    // linux-x86_64 — a hardcoded windows dir made cc-rs fall back to
+    // its own NDK probe and fail (device/CI-proven).
+    val hostTag = when {
+        org.gradle.internal.os.OperatingSystem.current().isWindows -> "windows-x86_64"
+        org.gradle.internal.os.OperatingSystem.current().isMacOsX -> "darwin-x86_64"
+        else -> "linux-x86_64"
+    }
+    val ndkBin = "$ndkHome/toolchains/llvm/prebuilt/$hostTag/bin"
 
     // --- Environment for cargo + cc-rs ---
     environment("PATH", "$mingwBin;$cargoHome/bin;${System.getenv("PATH")}")

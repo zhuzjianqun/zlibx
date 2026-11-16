@@ -16,7 +16,13 @@ MINGW_BIN="${MINGW_BIN:-D:/mingw64/mingw64/bin}"
 CARGO_HOME="${CARGO_HOME:-$HOME/.cargo}"
 # NDK (Android target linker + ar)
 NDK_HOME="${ANDROID_NDK_HOME:-${ANDROID_HOME:-D:/Android/Sdk}/ndk/28.2.13676358}"
-NDK_BIN="$NDK_HOME/toolchains/llvm/prebuilt/windows-x86_64/bin"
+# NDK prebuilt dir follows the BUILD host (windows/linux/darwin).
+case "$(uname -s)" in
+  MINGW*|CYGWIN*) HOST_TAG="windows-x86_64" ;;
+  Darwin*)        HOST_TAG="darwin-x86_64" ;;
+  *)              HOST_TAG="linux-x86_64" ;;
+esac
+NDK_BIN="$NDK_HOME/toolchains/llvm/prebuilt/$HOST_TAG/bin"
 
 # --- Environment ---
 export PATH="$MINGW_BIN:$CARGO_HOME/bin:$PATH"
