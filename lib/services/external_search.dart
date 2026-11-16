@@ -346,7 +346,7 @@ class LibgenProvider implements SearchProvider {
         if (libgenResultsParseOverride != null) {
           try {
             books = await libgenResultsParseOverride!(html, mirror);
-          } catch (_) {
+          } on Object catch (_) {
             libgenResultsParseOverride = null;
             books = parseResults(html, mirror);
           }

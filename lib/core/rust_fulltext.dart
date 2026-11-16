@@ -1,9 +1,9 @@
+
 import 'package:flutter/foundation.dart';
 import 'package:olib_api_plugin/olib_api_plugin.dart' as zl;
-
-import 'rust_init.dart';
 import '../lib.dart' as frb_api;
 import '../models.dart' as frb;
+import 'rust_init.dart';
 
 /// Phase 2 pilot: wires the Rust-backed full-text parser into the
 /// vendor plugin's `fulltextParseOverride` hook.
@@ -28,7 +28,7 @@ Future<zl.FullTextSearchPage> _rustParseFulltext(
 ) async {
   try {
     await ensureRustBridge();
-  } catch (e) {
+  } on Object catch (e) {
     // Bridge unavailable (lib loading failed, wrong platform, ...):
     // un-register and let the vendor's Dart parser take over.
     if (kDebugMode) {

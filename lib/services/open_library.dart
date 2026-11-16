@@ -69,7 +69,7 @@ class OpenLibrary extends TrendingBooksImpl {
     if (openLibraryTrendingParseOverride != null) {
       try {
         return await openLibraryTrendingParseOverride!(data.toString());
-      } catch (_) {
+      } on Object catch (_) {
         openLibraryTrendingParseOverride = null;
       }
     }

@@ -1,9 +1,9 @@
+
 import 'package:flutter/foundation.dart';
 import 'package:olib_api_plugin/olib_api_plugin.dart' as zl;
-
-import 'rust_init.dart';
 import '../lib.dart' as frb_api;
 import '../models.dart' as frb;
+import 'rust_init.dart';
 
 /// Phase 3: wires the Rust-backed book detail metadata parser into the
 /// vendor plugin's `bookDetailParseOverride` hook. Same architecture
@@ -20,7 +20,7 @@ void injectRustBookDetailParser() {
 Future<zl.BookDetailMetadata> _rustParseBookDetail(String html) async {
   try {
     await ensureRustBridge();
-  } catch (e) {
+  } on Object catch (e) {
     if (kDebugMode) {
       debugPrint(
         '[FRB] book detail bridge init failed, falling back to Dart: $e',

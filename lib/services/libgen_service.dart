@@ -89,7 +89,7 @@ class LibgenService {
               baseUrl,
               candidate,
             );
-          } catch (_) {
+          } on Object catch (_) {
             libgenAdsPageParseOverride = null;
             data = parseAdsPage(response.data.toString(), baseUrl, candidate);
           }

@@ -1,10 +1,10 @@
+
+
 import 'package:flutter/foundation.dart';
-
-import 'annas_archive.dart' as zl;
-
-import 'rust_init.dart';
 import '../lib.dart' as frb_api;
 import '../models.dart' as frb;
+import 'annas_archive.dart' as zl;
+import 'rust_init.dart';
 
 /// Phase 4: wires the Rust-backed Anna's Archive parsers into the
 /// static `ArchiveParsing` hooks. Same architecture as the other
@@ -41,7 +41,7 @@ Future<List<zl.ArchiveBook>> _rustAnnasSearch(
 ) async {
   try {
     await _ensureInit();
-  } catch (e) {
+  } on Object {
     _unregister();
     return zl.ArchiveParsing.parseSearchResults(
       html,
@@ -67,7 +67,7 @@ Future<zl.ArchiveBookDetails?> _rustAnnasDetails(
 ) async {
   try {
     await _ensureInit();
-  } catch (e) {
+  } on Object {
     _unregister();
     return zl.ArchiveParsing.parseBookDetails(html, url: url, baseUrl: baseUrl);
   }

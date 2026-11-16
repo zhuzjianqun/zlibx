@@ -1,12 +1,12 @@
+
 import 'package:flutter/foundation.dart';
+import '../lib.dart' as frb_api;
+import '../models.dart' as frb;
 import '../services/annas_models.dart' as am;
 import '../services/external_search.dart' as ext;
 import '../services/libgen_service.dart' as lg;
 import '../services/open_library.dart' as ol;
-
 import 'rust_init.dart';
-import '../lib.dart' as frb_api;
-import '../models.dart' as frb;
 
 /// Phase 4: wires the Rust-backed Library Genesis / Open Library
 /// parsers into their hooks in external_search.dart, libgen_service.dart
@@ -46,7 +46,7 @@ Future<List<am.BookData>> _rustLibgenResults(
 ) async {
   try {
     await _ensureInit();
-  } catch (e) {
+  } on Object catch (e) {
     _unregister('libgen results', e);
     rethrow;
   }
@@ -64,7 +64,7 @@ Future<am.BookInfoData?> _rustLibgenAds(
 ) async {
   try {
     await _ensureInit();
-  } catch (e) {
+  } on Object catch (e) {
     _unregister('libgen ads', e);
     rethrow;
   }
@@ -94,7 +94,7 @@ Future<am.BookInfoData?> _rustLibgenAds(
 Future<List<ol.TrendingBookData>> _rustOpenLibraryTrending(String html) async {
   try {
     await _ensureInit();
-  } catch (e) {
+  } on Object catch (e) {
     _unregister('openlibrary trending', e);
     rethrow;
   }

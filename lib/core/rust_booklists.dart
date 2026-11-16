@@ -1,9 +1,9 @@
+
 import 'package:flutter/foundation.dart';
 import 'package:olib_api_plugin/olib_api_plugin.dart' as zl;
-
-import 'rust_init.dart';
 import '../lib.dart' as frb_api;
 import '../models.dart' as frb;
+import 'rust_init.dart';
 
 /// Phase 3: wires the Rust-backed booklist / category / download-stats
 /// parsers into the vendor plugin's parse hooks. Same architecture as
@@ -48,7 +48,7 @@ void _unregisterAll() {
 Future<zl.BooklistsPage> _rustBooklistsPage(String html, String baseUrl) async {
   try {
     await _ensureInit();
-  } catch (e) {
+  } on Object {
     _unregisterAll();
     return zl.parseBooklistsPage(html, baseUrl: baseUrl);
   }
@@ -68,7 +68,7 @@ Future<List<zl.Booklist>> _rustUserProfileBooklists(
 ) async {
   try {
     await _ensureInit();
-  } catch (e) {
+  } on Object {
     _unregisterAll();
     return zl.parseUserProfileBooklists(html, baseUrl: baseUrl);
   }
@@ -88,7 +88,7 @@ Future<List<zl.Book>> _rustBooklistDetailBooks(
 ) async {
   try {
     await _ensureInit();
-  } catch (e) {
+  } on Object {
     _unregisterAll();
     return zl.parseBooklistDetailBooks(html, baseUrl: baseUrl);
   }
@@ -105,7 +105,7 @@ Future<List<zl.Book>> _rustBooklistDetailBooks(
 Future<zl.CategoryPage> _rustCategoryPage(String html, String? baseUrl) async {
   try {
     await _ensureInit();
-  } catch (e) {
+  } on Object {
     _unregisterAll();
     return zl.parseCategoryBooksPage(html, baseUrl: baseUrl);
   }
@@ -125,7 +125,7 @@ Future<zl.CategoryPage> _rustCategoryPage(String html, String? baseUrl) async {
 Future<List<zl.Book>> _rustDownloadStats(String html) async {
   try {
     await _ensureInit();
-  } catch (e) {
+  } on Object {
     _unregisterAll();
     return zl.parseDownloadStatsPage(html);
   }

@@ -1,9 +1,9 @@
+
 import 'package:flutter/foundation.dart';
 import 'package:olib_api_plugin/olib_api_plugin.dart' as zl;
-
-import 'rust_init.dart';
 import '../lib.dart' as frb_api;
 import '../models.dart' as frb;
+import 'rust_init.dart';
 
 /// Phase 3: wires the Rust-backed article search parser into the
 /// vendor plugin's `articleParseOverride` hook. Same architecture as
@@ -22,7 +22,7 @@ Future<zl.ArticleSearchPage> _rustParseArticle(
 ) async {
   try {
     await ensureRustBridge();
-  } catch (e) {
+  } on Object catch (e) {
     if (kDebugMode) {
       debugPrint('[FRB] article bridge init failed, falling back to Dart: $e');
     }
