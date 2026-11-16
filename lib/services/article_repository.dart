@@ -28,11 +28,8 @@ class ArticleRepository {
   /// fallback's URL. Unlike full-text search this route needs no
   /// session token: the query rides in the path and the mode in the
   /// query string, so the bare URL is enough.
-  String searchPageUrl({
-    required String query,
-    String? order,
-    int page = 1,
-  }) => _api.articlePageUrl(query: query, order: order, page: page);
+  String searchPageUrl({required String query, String? order, int page = 1}) =>
+      _api.articlePageUrl(query: query, order: order, page: page);
 
   /// The plugin's short error for a browser-check wall (plus the older
   /// shapes a wall can surface as) — same matcher as the other HTML
@@ -49,11 +46,14 @@ class ArticleRepository {
   /// challenge error instead of painting an empty result. The page
   /// must also echo [expectedQuery] in the search form's `q` input —
   /// the same wrong-page guard the Dio path applies.
-  ArticleSearchPage? parsePage(
+  /// Async since phase 3: with the host's `articleParseOverride`
+  /// injected, the parse runs through the Rust bridge (a Future); the
+  /// Dart implementation stays as the synchronous fallback.
+  Future<ArticleSearchPage?> parsePage(
     String html, {
     required String baseUrl,
     required String expectedQuery,
-  }) {
+  }) async {
     ArticleSearchPage? page;
     String? error;
     if (!html.contains('searchResultBox')) {
@@ -66,7 +66,9 @@ class ArticleRepository {
     }
     if (error == null) {
       try {
-        page = parseArticleSearchPage(html, baseUrl: baseUrl);
+        page = articleParseOverride != null
+            ? await articleParseOverride!(html, baseUrl)
+            : parseArticleSearchPage(html, baseUrl: baseUrl);
       } catch (_) {
         error = 'parse failed';
       }
@@ -85,8 +87,7 @@ class ArticleRepository {
     String? userId,
     String? userKey,
   }) async {
-    final hasSession =
-        userId != null && userKey != null && userKey.isNotEmpty;
+    final hasSession = userId != null && userKey != null && userKey.isNotEmpty;
     if (hasSession) {
       await installSessionCookies(
         userId: userId,

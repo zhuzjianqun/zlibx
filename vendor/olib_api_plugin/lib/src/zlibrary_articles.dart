@@ -88,10 +88,13 @@ mixin ZLibraryArticles on ZLibraryApiBase {
     // Parse on a background isolate: the results page is a large
     // HTML document and the parse is pure work on a string; the
     // result is plain data (sendable), so the main isolate never
-    // blocks on it.
-    final pageResult = await Isolate.run(
-      () => parseArticleSearchPage(html, baseUrl: _base),
-    );
+    // blocks on it. Phase 3: the host-injected Rust hook takes over
+    // when present; the Dart isolate path stays as the fallback.
+    final pageResult = articleParseOverride != null
+        ? await articleParseOverride!(html, _base)
+        : await Isolate.run(
+            () => parseArticleSearchPage(html, baseUrl: _base),
+          );
     return ApiResponse.ok(pageResult);
   }
 

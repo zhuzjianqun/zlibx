@@ -71,3 +71,35 @@ pub struct FullTextSearchPage {
     pub total: i64,
     pub total_pages: i64,
 }
+
+/// One article search hit (the site's 文章 tab). Mirrors `Article`
+/// in `article_search.dart` — a dedicated model on purpose: the card
+/// carries fields Book has no slot for (`download_path`, `quality`).
+#[derive(Debug, Clone)]
+pub struct Article {
+    pub id: i64,
+    pub title: String,
+    pub href: Option<String>,
+    pub url: Option<String>,
+    pub hash: Option<String>,
+    pub author: Option<String>,
+    pub cover: Option<String>,
+    pub publisher: Option<String>,
+    pub year: Option<i64>,
+    pub language: Option<String>,
+    pub extension: Option<String>,
+    pub filesize_string: Option<String>,
+    pub rating: Option<String>,
+    pub quality: Option<String>,
+    pub download_path: Option<String>,
+    pub removed: bool,
+    pub unavailable_reason: Option<String>,
+}
+
+/// One page of article search results. Mirrors `ArticleSearchPage`.
+#[derive(Debug, Clone)]
+pub struct ArticleSearchPage {
+    pub articles: Vec<Article>,
+    pub total: i64,
+    pub total_pages: i64,
+}

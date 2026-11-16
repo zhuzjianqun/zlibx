@@ -105,13 +105,12 @@ class ArticleSearchNotifier extends Notifier<ArticleSearchState> {
   /// page download per search, and never started off the solver path
   /// (a walled mirror spends a WebView load per page; running those
   /// on speculation would hurt more than the prefetch helps).
-  ({ArticleSearchParams params, int page, ArticleSearchPage data})?
-      _prefetched;
+  ({ArticleSearchParams params, int page, ArticleSearchPage data})? _prefetched;
 
   /// The in-flight prefetch load, so a scroll arriving while it runs
   /// awaits it instead of double-fetching the same page.
   Future<({ArticleSearchPage? page, String? error, bool viaSolver})>?
-      _prefetchInFlight;
+  _prefetchInFlight;
 
   /// Generation guard: every new search / reset / consume bumps it,
   /// so a stale prefetch continuation can never write into newer
@@ -143,7 +142,8 @@ class ArticleSearchNotifier extends Notifier<ArticleSearchState> {
       total: page.total,
       currentPage: 1,
       totalPages: page.totalPages,
-      hasMore: page.articles.isNotEmpty &&
+      hasMore:
+          page.articles.isNotEmpty &&
           (page.articles.length < page.total || page.totalPages > 1),
       hasSearched: true,
     );
@@ -186,8 +186,13 @@ class ArticleSearchNotifier extends Notifier<ArticleSearchState> {
       if (requestId != _requestId) return;
       if (result.page != null) {
         _dropPrefetch();
-        _applyLoadedPage(params, page, result.page!, requestId,
-            viaSolver: result.viaSolver);
+        _applyLoadedPage(
+          params,
+          page,
+          result.page!,
+          requestId,
+          viaSolver: result.viaSolver,
+        );
         return;
       }
       // The speculative load failed — drop it and load the page the
@@ -205,8 +210,13 @@ class ArticleSearchNotifier extends Notifier<ArticleSearchState> {
       return;
     }
     _dropPrefetch();
-    _applyLoadedPage(params, page, result.page!, requestId,
-        viaSolver: result.viaSolver);
+    _applyLoadedPage(
+      params,
+      page,
+      result.page!,
+      requestId,
+      viaSolver: result.viaSolver,
+    );
   }
 
   /// Merges [data] (page [page] of [params]) into the list, then
@@ -232,7 +242,8 @@ class ArticleSearchNotifier extends Notifier<ArticleSearchState> {
       total: data.total,
       currentPage: page,
       totalPages: data.totalPages,
-      hasMore: data.articles.isNotEmpty &&
+      hasMore:
+          data.articles.isNotEmpty &&
           (merged.length < data.total || data.totalPages > page),
       isLoadingMore: false,
     );
@@ -247,13 +258,15 @@ class ArticleSearchNotifier extends Notifier<ArticleSearchState> {
     _prefetched = null;
     final future = _loadPage(params, page);
     _prefetchInFlight = future;
-    unawaited(future.then((result) {
-      if (gen != _prefetchGen) return;
-      _prefetchInFlight = null;
-      final data = result.page;
-      if (data == null || result.viaSolver) return;
-      _prefetched = (params: params, page: page, data: data);
-    }));
+    unawaited(
+      future.then((result) {
+        if (gen != _prefetchGen) return;
+        _prefetchInFlight = null;
+        final data = result.page;
+        if (data == null || result.viaSolver) return;
+        _prefetched = (params: params, page: page, data: data);
+      }),
+    );
   }
 
   /// Drops any parked / in-flight prefetch and invalidates its
@@ -276,8 +289,7 @@ class ArticleSearchNotifier extends Notifier<ArticleSearchState> {
   /// message when both paths failed. [viaSolver] says which path
   /// produced a non-null page (the solver path is never prefetched
   /// from).
-  Future<({ArticleSearchPage? page, String? error, bool viaSolver})>
-      _loadPage(
+  Future<({ArticleSearchPage? page, String? error, bool viaSolver})> _loadPage(
     ArticleSearchParams params,
     int page,
   ) async {
@@ -298,11 +310,7 @@ class ArticleSearchNotifier extends Notifier<ArticleSearchState> {
         // throw becomes a failed future that flies straight past the
         // catch) — CI-proven 2026-11-13 by the prefetch tests, which
         // were the first to exercise this path in a unit test.
-        return await _loadPageViaSolver(
-          params,
-          page,
-          originalError: error,
-        );
+        return await _loadPageViaSolver(params, page, originalError: error);
       }
       return (page: null, error: error, viaSolver: false);
     } catch (e) {
@@ -315,7 +323,7 @@ class ArticleSearchNotifier extends Notifier<ArticleSearchState> {
   /// to the results URL (the session cookies are installed inside
   /// fetchViaSolver when the user is signed in).
   Future<({ArticleSearchPage? page, String? error, bool viaSolver})>
-      _loadPageViaSolver(
+  _loadPageViaSolver(
     ArticleSearchParams params,
     int page, {
     required String originalError,
@@ -334,7 +342,7 @@ class ArticleSearchNotifier extends Notifier<ArticleSearchState> {
     if (html == null) {
       return (page: null, error: originalError, viaSolver: true);
     }
-    final parsed = _repository.parsePage(
+    final parsed = await _repository.parsePage(
       html,
       baseUrl: Uri.parse(url).origin,
       expectedQuery: params.query,

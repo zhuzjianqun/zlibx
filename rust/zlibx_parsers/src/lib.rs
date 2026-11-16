@@ -7,6 +7,7 @@
 
 pub mod models;
 pub mod fulltext;
+pub mod article;
 
 use flutter_rust_bridge::frb;
 
@@ -56,6 +57,30 @@ pub fn extract_fulltext_token(html: String) -> Option<String> {
 #[frb]
 pub fn extract_fulltext_query(html: String) -> Option<String> {
     fulltext::extract_fulltext_query(&html)
+}
+
+/// Phase 3: parse one page of article search results (the 文章 tab).
+///
+/// Mirrors `parseArticleSearchPage` in `article_search.dart`.
+/// `base_url` uses the empty-string convention (see parse_fulltext_search_page).
+#[frb]
+pub fn parse_article_search_page(
+    html: String,
+    base_url: String,
+) -> models::ArticleSearchPage {
+    let base = if base_url.is_empty() {
+        None
+    } else {
+        Some(base_url.as_str())
+    };
+    article::parse_article_search_page(&html, base)
+}
+
+/// Extract the query an article results page echoes back (wrong-page
+/// guard). Mirrors `extractArticleSearchQuery`.
+#[frb]
+pub fn extract_article_search_query(html: String) -> Option<String> {
+    article::extract_article_search_query(&html)
 }
 
 // FRB-generated bindings (produced by `tool/frb_codegen.sh`; gitignored).
