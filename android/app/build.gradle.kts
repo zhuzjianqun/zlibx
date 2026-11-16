@@ -132,10 +132,14 @@ tasks.register<Exec>("cargoBuildRust") {
     environment("PATH", "$mingwBin;$cargoHome/bin;${System.getenv("PATH")}")
     environment("ANDROID_HOME", androidHome)
     environment("ANDROID_NDK_HOME", ndkHome)
-    // cc-rs needs explicit compiler overrides for the Android target.
-    environment("CC_aarch64_linux_android", "$ndkBin/aarch64-linux-android29-clang.cmd")
-    environment("AR_aarch64_linux_android", "$ndkBin/llvm-ar.exe")
-    environment("RANLIB_aarch64_linux_android", "$ndkBin/llvm-ranlib.exe")
+    // cc-rs and rustc need explicit tool overrides for the Android
+    // target (.cargo/config.toml no longer pins a per-OS linker path).
+    val isWindows = org.gradle.internal.os.OperatingSystem.current().isWindows
+    val clangName = if (isWindows) "aarch64-linux-android29-clang.cmd" else "aarch64-linux-android29-clang"
+    environment("CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER", "$ndkBin/$clangName")
+    environment("CC_aarch64_linux_android", "$ndkBin/$clangName")
+    environment("AR_aarch64_linux_android", "$ndkBin/llvm-ar")
+    environment("RANLIB_aarch64_linux_android", "$ndkBin/llvm-ranlib")
 
     val cargoBin = file("$cargoHome/bin/cargo.exe")
     commandLine(

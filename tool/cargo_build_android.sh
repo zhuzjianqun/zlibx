@@ -23,10 +23,17 @@ export PATH="$MINGW_BIN:$CARGO_HOME/bin:$PATH"
 export ANDROID_HOME="${ANDROID_HOME:-D:/Android/Sdk}"
 export ANDROID_NDK_HOME="$NDK_HOME"
 
-# cc-rs needs explicit compiler overrides for the Android target.
-export CC_aarch64_linux_android="$NDK_BIN/aarch64-linux-android29-clang.cmd"
-export AR_aarch64_linux_android="$NDK_BIN/llvm-ar.exe"
-export RANLIB_aarch64_linux_android="$NDK_BIN/llvm-ranlib.exe"
+# cc-rs and rustc need explicit tool overrides for the Android target
+# (.cargo/config.toml no longer pins a per-OS linker path).
+if [[ "$(uname -s)" == MINGW* || "$(uname -s)" == CYGWIN* ]]; then
+  CLANG_NAME="aarch64-linux-android29-clang.cmd"
+else
+  CLANG_NAME="aarch64-linux-android29-clang"
+fi
+export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="$NDK_BIN/$CLANG_NAME"
+export CC_aarch64_linux_android="$NDK_BIN/$CLANG_NAME"
+export AR_aarch64_linux_android="$NDK_BIN/llvm-ar"
+export RANLIB_aarch64_linux_android="$NDK_BIN/llvm-ranlib"
 
 cd "$CRATE_DIR"
 cargo build --release --target aarch64-linux-android "$@"

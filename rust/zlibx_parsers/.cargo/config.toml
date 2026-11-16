@@ -5,21 +5,16 @@
 # test` / lint only; building the .so for the device uses the Android target
 # with the NDK's clang as linker.
 #
-# The NDK path below is filled in after the NDK is installed. The NDK 28.2
-# toolchain layout is:
-#   $ANDROID_HOME/ndk/28.2.13676358/toolchains/llvm/prebuilt/windows-x86_64/bin/
-# with per-API-level clang shims like aarch64-linux-android29-clang.cmd.
+# The Android linker / ar are NOT pinned here — hardcoding a per-OS path
+# (D:\... on Windows, linux-x86_64 on CI) breaks the other platform. They
+# come from environment variables instead, set by whichever driver builds:
+#   - Gradle task cargoBuildRust (android/app/build.gradle.kts)
+#   - tool/cargo_build_android.sh
+#   - the release CI job (oliblite-build-android-arm64.yml)
+#   CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER = <ndk>/.../aarch64-linux-android29-clang(.cmd)
+#   CC_aarch64_linux_android / AR_aarch64_linux_android / RANLIB_aarch64_linux_android
+#   (cc-rs needs the same triple for dart-sys's C glue).
 
 [build]
 # Keep all build artifacts under the crate's target/ dir (not the workspace root).
 target-dir = "target"
-
-[target.aarch64-linux-android]
-# NDK 28.2 toolchain (installed via sdkmanager to D:/Android/Sdk).
-# clang shim for API 29 (minSdk = 29) serves as the linker; llvm-ar/ranlib
-# from the NDK handle archive operations for Rust's build.
-linker = "D:/Android/Sdk/ndk/28.2.13676358/toolchains/llvm/prebuilt/windows-x86_64/bin/aarch64-linux-android29-clang.cmd"
-ar = "D:/Android/Sdk/ndk/28.2.13676358/toolchains/llvm/prebuilt/windows-x86_64/bin/llvm-ar.exe"
-
-# The NDK's libc/musl sysroot is found via the target triple; cargo + rustc
-# locate it through the linker. No extra env needed.
