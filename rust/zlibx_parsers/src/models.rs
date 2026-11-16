@@ -194,3 +194,41 @@ pub struct ArchiveBookDetails {
     pub description: Option<String>,
     pub slow_download_url: Option<String>,
 }
+
+/// One Library Genesis result. Mirrors `BookData` in
+/// lib/services/annas_models.dart (the libgen parser fills the same
+/// seven fields; `source` is set by the caller, not the parser).
+#[derive(Debug, Clone)]
+pub struct LibgenBookData {
+    pub title: String,
+    pub author: Option<String>,
+    pub thumbnail: Option<String>,
+    pub link: String,
+    pub md5: String,
+    pub publisher: Option<String>,
+    pub info: Option<String>,
+}
+
+/// One parsed libgen `ads.php` page. Mirrors `BookInfoData`
+/// (flattened; isFastDownload is caller-set, not parsed).
+#[derive(Debug, Clone)]
+pub struct LibgenBookInfoData {
+    pub title: String,
+    pub author: Option<String>,
+    pub thumbnail: Option<String>,
+    pub publisher: Option<String>,
+    pub info: Option<String>,
+    pub link: String,
+    pub md5: String,
+    pub format: String,
+    pub mirror: Option<String>,
+    pub description: Option<String>,
+}
+
+/// One Open Library trending row. Mirrors `TrendingBookData`
+/// (title/thumbnail both Option — rows missing either are skipped).
+#[derive(Debug, Clone)]
+pub struct TrendingBookData {
+    pub title: Option<String>,
+    pub thumbnail: Option<String>,
+}

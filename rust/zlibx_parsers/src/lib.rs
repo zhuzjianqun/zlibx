@@ -13,6 +13,8 @@ pub mod booklist;
 pub mod category;
 pub mod download_stats;
 pub mod annas_archive;
+pub mod libgen;
+pub mod open_library;
 
 use flutter_rust_bridge::frb;
 
@@ -274,3 +276,44 @@ pub fn annas_build_search_url(
 // The codegen injects this `mod` declaration — keep it after the doc
 // comments and imports so the crate-level `//!` docs stay at the top.
 mod frb_generated;
+
+// ──────────────────────────────────────────────────────────────────
+// Phase 4: Library Genesis (external source)
+// ──────────────────────────────────────────────────────────────────
+
+/// Phase 4: parse a libgen results page (both table layouts).
+/// Mirrors `LibgenProvider.parseResults`.
+#[frb]
+pub fn parse_libgen_results(html: String, base_url: String) -> Vec<models::LibgenBookData> {
+    libgen::parse_results(&html, &base_url)
+}
+
+/// Phase 4: extract the cover URL from a libgen ads.php page.
+/// Mirrors `LibgenService.parseAdsCover` (static).
+#[frb]
+pub fn parse_libgen_ads_cover(html: String, base_url: String) -> Option<String> {
+    libgen::parse_ads_cover(&html, &base_url)
+}
+
+/// Phase 4: parse a libgen ads.php page into book info.
+/// Mirrors `LibgenService.parseAdsPage` (never throws; returns None
+/// on unrecognized markup).
+#[frb]
+pub fn parse_libgen_ads_page(
+    html: String,
+    base_url: String,
+    url: String,
+) -> Option<models::LibgenBookInfoData> {
+    libgen::parse_ads_page(&html, &base_url, &url)
+}
+
+// ──────────────────────────────────────────────────────────────────
+// Phase 4: Open Library trending (external source)
+// ──────────────────────────────────────────────────────────────────
+
+/// Phase 4: parse an Open Library trending page.
+/// Mirrors `OpenLibrary._parser`.
+#[frb]
+pub fn parse_open_library_trending(html: String) -> Vec<models::TrendingBookData> {
+    open_library::parse_trending(&html)
+}
