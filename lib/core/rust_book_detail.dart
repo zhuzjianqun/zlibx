@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:olib_api_plugin/olib_api_plugin.dart' as zl;
 
-import '../frb_generated.dart' show ZlibxParsers;
+import 'rust_init.dart';
 import '../lib.dart' as frb_api;
 import '../models.dart' as frb;
 
@@ -17,12 +17,9 @@ void injectRustBookDetailParser() {
   zl.bookDetailParseOverride = _rustParseBookDetail;
 }
 
-Future<void>? _frbBookDetailInitFuture;
-
 Future<zl.BookDetailMetadata> _rustParseBookDetail(String html) async {
   try {
-    _frbBookDetailInitFuture ??= ZlibxParsers.init();
-    await _frbBookDetailInitFuture;
+    await ensureRustBridge();
   } catch (e) {
     if (kDebugMode) {
       debugPrint(
@@ -30,8 +27,7 @@ Future<zl.BookDetailMetadata> _rustParseBookDetail(String html) async {
       );
     }
     zl.bookDetailParseOverride = null;
-    _frbBookDetailInitFuture = null;
-    return zl.parseBookDetailProperties(html);
+      return zl.parseBookDetailProperties(html);
   }
   final meta = await frb_api.parseBookDetailProperties(html: html);
   if (kDebugMode) {

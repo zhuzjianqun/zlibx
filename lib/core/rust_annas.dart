@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import 'annas_archive.dart' as zl;
 
-import '../frb_generated.dart' show ZlibxParsers;
+import 'rust_init.dart';
 import '../lib.dart' as frb_api;
 import '../models.dart' as frb;
 
@@ -22,11 +22,8 @@ void injectRustAnnasParsers() {
   zl.ArchiveParsing.bookDetailsParseOverride = _rustAnnasDetails;
 }
 
-Future<void>? _frbAnnasInitFuture;
-
 Future<void> _ensureInit() async {
-  _frbAnnasInitFuture ??= ZlibxParsers.init();
-  await _frbAnnasInitFuture;
+  await ensureRustBridge();
 }
 
 void _unregister() {
@@ -35,7 +32,6 @@ void _unregister() {
   }
   zl.ArchiveParsing.searchResultsParseOverride = null;
   zl.ArchiveParsing.bookDetailsParseOverride = null;
-  _frbAnnasInitFuture = null;
 }
 
 Future<List<zl.ArchiveBook>> _rustAnnasSearch(

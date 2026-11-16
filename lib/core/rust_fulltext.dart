@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:olib_api_plugin/olib_api_plugin.dart' as zl;
 
-import '../frb_generated.dart' show ZlibxParsers;
+import 'rust_init.dart';
 import '../lib.dart' as frb_api;
 import '../models.dart' as frb;
 
@@ -22,26 +22,20 @@ void injectRustFulltextParser() {
   zl.fulltextParseOverride = _rustParseFulltext;
 }
 
-/// One-shot FRB init guard: `init()` must run exactly once before any
-/// Rust call; a failed init clears both the future and the hook so the
-/// caller falls back to Dart on every subsequent search.
-Future<void>? _frbInitFuture;
-
 Future<zl.FullTextSearchPage> _rustParseFulltext(
   String html,
   String? baseUrl,
 ) async {
   try {
-    _frbInitFuture ??= ZlibxParsers.init();
-    await _frbInitFuture;
+    await ensureRustBridge();
   } catch (e) {
     // Bridge unavailable (lib loading failed, wrong platform, ...):
     // un-register and let the vendor's Dart parser take over.
     if (kDebugMode) {
       debugPrint('[FRB] bridge init failed, falling back to Dart: $e');
     }
+    resetRustBridge();
     zl.fulltextParseOverride = null;
-    _frbInitFuture = null;
     return zl.parseFullTextSearchPage(html, baseUrl: baseUrl);
   }
   // FRB wraps Option<String> params as plain String; empty = no base URL.
@@ -76,10 +70,12 @@ zl.FullTextHit _mapHit(frb.FullTextHit hit) {
   return zl.FullTextHit(
     book: _mapBook(hit.book),
     snippet: hit.snippet
-        .map((part) => zl.FullTextSnippetPart(
-              text: part.text,
-              highlighted: part.highlighted,
-            ))
+        .map(
+          (part) => zl.FullTextSnippetPart(
+            text: part.text,
+            highlighted: part.highlighted,
+          ),
+        )
         .toList(),
     removed: hit.removed,
     unavailableReason: hit.unavailableReason,

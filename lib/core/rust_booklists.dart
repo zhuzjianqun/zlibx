@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:olib_api_plugin/olib_api_plugin.dart' as zl;
 
-import '../frb_generated.dart' show ZlibxParsers;
+import 'rust_init.dart';
 import '../lib.dart' as frb_api;
 import '../models.dart' as frb;
 
@@ -20,13 +20,10 @@ void injectRustBooklistParsers() {
   zl.downloadStatsParseOverride = _rustDownloadStats;
 }
 
-Future<void>? _frbListInitFuture;
-
 /// Shared one-shot FRB init (same engine as the other hooks; the
 /// duplicate guard keeps each hook independent and testable).
 Future<void> _ensureInit() async {
-  _frbListInitFuture ??= ZlibxParsers.init();
-  await _frbListInitFuture;
+  await ensureRustBridge();
 }
 
 /// Un-register every hook after a bridge failure, so all list-family
@@ -36,12 +33,12 @@ void _unregisterAll() {
   if (kDebugMode) {
     debugPrint('[FRB] list-family bridge init failed, falling back to Dart');
   }
+  resetRustBridge();
   zl.booklistsPageParseOverride = null;
   zl.userProfileBooklistsParseOverride = null;
   zl.booklistDetailBooksParseOverride = null;
   zl.categoryPageParseOverride = null;
   zl.downloadStatsParseOverride = null;
-  _frbListInitFuture = null;
 }
 
 // ──────────────────────────────────────────────────────────────────

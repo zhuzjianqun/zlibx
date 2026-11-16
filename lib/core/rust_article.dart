@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:olib_api_plugin/olib_api_plugin.dart' as zl;
 
-import '../frb_generated.dart' show ZlibxParsers;
+import 'rust_init.dart';
 import '../lib.dart' as frb_api;
 import '../models.dart' as frb;
 
@@ -16,22 +16,18 @@ void injectRustArticleParser() {
   zl.articleParseOverride = _rustParseArticle;
 }
 
-Future<void>? _frbArticleInitFuture;
-
 Future<zl.ArticleSearchPage> _rustParseArticle(
   String html,
   String? baseUrl,
 ) async {
   try {
-    _frbArticleInitFuture ??= ZlibxParsers.init();
-    await _frbArticleInitFuture;
+    await ensureRustBridge();
   } catch (e) {
     if (kDebugMode) {
       debugPrint('[FRB] article bridge init failed, falling back to Dart: $e');
     }
     zl.articleParseOverride = null;
-    _frbArticleInitFuture = null;
-    return zl.parseArticleSearchPage(html, baseUrl: baseUrl);
+      return zl.parseArticleSearchPage(html, baseUrl: baseUrl);
   }
   final page = await frb_api.parseArticleSearchPage(
     html: html,

@@ -4,7 +4,7 @@ import '../services/external_search.dart' as ext;
 import '../services/libgen_service.dart' as lg;
 import '../services/open_library.dart' as ol;
 
-import '../frb_generated.dart' show ZlibxParsers;
+import 'rust_init.dart';
 import '../lib.dart' as frb_api;
 import '../models.dart' as frb;
 
@@ -26,21 +26,18 @@ void injectRustExternalParsers() {
   ol.openLibraryTrendingParseOverride = _rustOpenLibraryTrending;
 }
 
-Future<void>? _frbExternalInitFuture;
-
 Future<void> _ensureInit() async {
-  _frbExternalInitFuture ??= ZlibxParsers.init();
-  await _frbExternalInitFuture;
+  await ensureRustBridge();
 }
 
 void _unregister(String tag, Object error) {
   if (kDebugMode) {
     debugPrint('[FRB] $tag bridge failed, falling back to Dart: $error');
   }
+  resetRustBridge();
   ext.libgenResultsParseOverride = null;
   lg.libgenAdsPageParseOverride = null;
   ol.openLibraryTrendingParseOverride = null;
-  _frbExternalInitFuture = null;
 }
 
 Future<List<am.BookData>> _rustLibgenResults(
